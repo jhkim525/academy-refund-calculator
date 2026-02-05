@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학원 수강료 환불액 계산기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        input[type="number"],
+        input[type="date"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .calculate-days-btn {
+            background: #4caf50;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+
+        .calculate-days-btn:hover {
+            background: #45a049;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .result-amount {
+            font-size: 36px;
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .result-detail {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            padding-top: 15px;
+            border-top: 2px solid #ddd;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        .month-summary {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .month-summary.show {
+            display: block;
+        }
+
+        .month-summary-title {
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .month-item-summary {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .month-item-summary input[type="number"] {
+            width: 80px;
+            padding: 5px 8px;
+            font-size: 13px;
+        }
+
+        .holiday-input {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .holiday-input label {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .holiday-input input {
+            font-size: 14px;
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 학원 수강료 환불액 계산기</h1>
+        <p class="subtitle">학원법 시행령 제18조 별표 4 기준</p>
+
+        <form id="refundForm">
+            <div class="form-group">
+                <label for="totalFee">납부한 수강료 (원)</label>
+                <input type="number" id="totalFee" required min="0" step="1" placeholder="예: 1000000">
+            </div>
+
+            <div class="form-group">
+                <label for="courseStartDate">수강 시작일</label>
+                <input type="date" id="courseStartDate" required>
+            </div>
+
+            <div class="form-group">
+                <label for="courseEndDate">수강 종료일</label>
+                <input type="date" id="courseEndDate" required>
+            </div>
+
+            <div class="form-group">
+                <label>제외할 요일</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="excludeSaturday">
+                        <label for="excludeSaturday">토요일 제외</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="excludeSunday" checked>
+                        <label for="excludeSunday">일요일 제외</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="excludeHolidays">
+                    공휴일 제외 (날짜를 쉼표로 구분)
+                </label>
+                <div class="holiday-input" id="holidayInput" style="display: none;">
+                    <input type="text" id="holidayDates" placeholder="예: 2026-01-01, 2026-02-10, 2026-03-01">
+                    <div class="help-text">YYYY-MM-DD 형식으로 입력하세요</div>
+                </div>
+            </div>
+
+            <button type="button" class="calculate-days-btn" id="calculateDaysBtn">📅 월별 수업일수 계산하기</button>
+
+            <div class="month-summary" id="monthSummary"></div>
+
+            <div class="form-group" id="refundDateGroup" style="display: none;">
+                <label for="refundDate">환불 고지일 (수강 포기일)</label>
+                <input type="date" id="refundDate" required>
+            </div>
+
+            <button type="submit" id="submitBtn" style="display: none;">환불액 계산하기</button>
+        </form>
+
+        <div id="result" class="result">
+            <div class="result-title">환불 가능 금액</div>
+            <div class="result-amount" id="refundAmount">0원</div>
+            <div class="result-detail" id="refundDetail"></div>
+        </div>
+
+        <div class="info-box">
+            ℹ️ <strong>안내사항</strong><br>
+            • 교습 시작 전: 전액 환불<br>
+            • 총 교습의 1/3 미만 경과: (해당 월 수강료 - 일할 계산 금액) × 2/3<br>
+            • 총 교습의 1/3 이상 ~ 1/2 미만 경과: (해당 월 수강료 - 일할 계산 금액) × 1/2<br>
+            • 총 교습의 1/2 이상 경과: 환불 불가<br>
+            • 일할 계산 금액 = (해당 월 수강료 ÷ 해당 월 총 일수) × 교습한 일수<br>
+            • 환불액은 반환사유 발생일부터 5일 이내에 반환되어야 합니다
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('refundForm');
+        const result = document.getElementById('result');
+        const refundAmount = document.getElementById('refundAmount');
+        const refundDetail = document.getElementById('refundDetail');
+        const calculateDaysBtn = document.getElementById('calculateDaysBtn');
+        const monthSummary = document.getElementById('monthSummary');
+        const excludeHolidaysCheckbox = document.getElementById('excludeHolidays');
+        const holidayInput = document.getElementById('holidayInput');
+        const refundDateGroup = document.getElementById('refundDateGroup');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let monthlyData = [];
+
+        // 공휴일 체크박스 토글
+        excludeHolidaysCheckbox.addEventListener('change', function() {
+            holidayInput.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // 2026년 한국 공휴일 (기본값)
+        const defaultHolidays = [
+            '2026-01-01', // 신정
+            '2026-02-16', '2026-02-17', '2026-02-18', // 설날
+            '2026-03-01', // 삼일절
+            '2026-05-05', // 어린이날
+            '2026-05-24', // 부처님오신날
+            '2026-06-06', // 현충일
+            '2026-08-15', // 광복절
+            '2026-09-28', '2026-09-29', '2026-09-30', // 추석
+            '2026-10-03', // 개천절
+            '2026-10-09', // 한글날
+            '2026-12-25'  // 크리스마스
+        ];
+
+        // 숫자 포맷 함수 (1원 단위까지)
+        function formatNumber(num) {
+            return Math.floor(num).toLocaleString();
+        }
+
+        // 월별 수업일수 계산
+        calculateDaysBtn.addEventListener('click', function() {
+            const startDate = new Date(document.getElementById('courseStartDate').value);
+            const endDate = new Date(document.getElementById('courseEndDate').value);
+            const totalFee = parseFloat(document.getElementById('totalFee').value);
+
+            if (!startDate || !endDate || !totalFee) {
+                alert('수강료, 시작일, 종료일을 모두 입력해주세요.');
+                return;
+            }
+
+            if (startDate > endDate) {
+                alert('시작일이 종료일보다 늦습니다.');
+                return;
+            }
+
+            const excludeSaturday = document.getElementById('excludeSaturday').checked;
+            const excludeSunday = document.getElementById('excludeSunday').checked;
+            const excludeHolidays = document.getElementById('excludeHolidays').checked;
+
+            // 공휴일 처리
+            let holidays = [];
+            if (excludeHolidays) {
+                const holidayInput = document.getElementById('holidayDates').value.trim();
+                if (holidayInput) {
+                    holidays = holidayInput.split(',').map(d => d.trim());
+                } else {
+                    holidays = defaultHolidays;
+                }
+            }
+
+            // 월별로 수업일수 계산
+            const monthsMap = new Map();
+            let currentDate = new Date(startDate);
+
+            while (currentDate <= endDate) {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth() + 1;
+                const key = `${year}-${String(month).padStart(2, '0')}`;
+
+                // 제외 조건 확인
+                const dayOfWeek = currentDate.getDay();
+                const dateStr = currentDate.toISOString().split('T')[0];
+
+                let shouldCount = true;
+
+                if (excludeSaturday && dayOfWeek === 6) shouldCount = false;
+                if (excludeSunday && dayOfWeek === 0) shouldCount = false;
+                if (excludeHolidays && holidays.includes(dateStr)) shouldCount = false;
+
+                if (shouldCount) {
+                    if (!monthsMap.has(key)) {
+                        monthsMap.set(key, { days: 0, year, month });
+                    }
+                    monthsMap.get(key).days++;
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // 월별 데이터 배열 생성
+            monthlyData = Array.from(monthsMap.values());
+            const totalDays = monthlyData.reduce((sum, m) => sum + m.days, 0);
+
+            // 월별 수강료 계산 (1원 단위까지 정확하게)
+            let remainingFee = totalFee;
+            monthlyData.forEach((m, idx) => {
+                if (idx === monthlyData.length - 1) {
+                    m.fee = remainingFee;
+                } else {
+                    m.fee = Math.floor(totalFee * m.days / totalDays);
+                    remainingFee -= m.fee;
+                }
+                m.completed = 0; // 초기값
+            });
+
+            // 월별 요약 표시
+            displayMonthSummary();
+
+            // 환불 날짜 입력 및 제출 버튼 표시
+            refundDateGroup.style.display = 'block';
+            submitBtn.style.display = 'block';
+        });
+
+        // 월별 요약 표시
+        function displayMonthSummary() {
+            if (monthlyData.length === 0) return;
+
+            let html = '<div class="month-summary-title">📊 월별 수업일수 및 수강료</div>';
+
+            monthlyData.forEach((m, idx) => {
+                html += `
+                    <div class="month-item-summary">
+                        <div>
+                            <strong>${m.year}년 ${m.month}월</strong> - 
+                            ${m.days}일 (${formatNumber(m.fee)}원)
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span style="font-size: 12px;">완료:</span>
+                            <input type="number" 
+                                   class="completed-input" 
+                                   data-index="${idx}"
+                                   min="0" 
+                                   max="${m.days}" 
+                                   value="0"
+                                   placeholder="0">
+                            <span style="font-size: 12px;">일</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            monthSummary.innerHTML = html;
+            monthSummary.classList.add('show');
+
+            // 완료일수 입력 이벤트
+            document.querySelectorAll('.completed-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    const idx = parseInt(this.dataset.index);
+                    monthlyData[idx].completed = parseFloat(this.value) || 0;
+                });
+            });
+        }
+
+        // 환불액 계산
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (monthlyData.length === 0) {
+                alert('먼저 월별 수업일수를 계산해주세요.');
+                return;
+            }
+
+            const totalFee = parseFloat(document.getElementById('totalFee').value);
+            const refundDate = new Date(document.getElementById('refundDate').value);
+            const startDate = new Date(document.getElementById('courseStartDate').value);
+
+            let refund = 0;
+            let detail = '';
+
+            // 교습 시작 전 확인
+            if (refundDate < startDate) {
+                refund = totalFee;
+                detail = '교습 시작 전이므로 전액 환불됩니다.';
+            } else {
+                // 현재 환불 대상 월 찾기
+                let currentMonthIndex = -1;
+                for (let i = 0; i < monthlyData.length; i++) {
+                    if (monthlyData[i].completed < monthlyData[i].days) {
+                        currentMonthIndex = i;
+                        break;
+                    }
+                }
+
+                // 모든 월이 완료된 경우
+                if (currentMonthIndex === -1) {
+                    refund = 0;
+                    detail = '모든 교습이 완료되어 환불 불가합니다.';
+                } else {
+                    const currentMonth = monthlyData[currentMonthIndex];
+                    const ratio = currentMonth.completed / currentMonth.days;
+
+                    // 일할 계산 금액 = (해당 월 수강료 ÷ 해당 월 총 일수) × 교습한 일수
+                    const dailyFee = currentMonth.fee / currentMonth.days;
+                    const usedFee = Math.floor(dailyFee * currentMonth.completed);
+
+                    // 환불 대상 금액 = 해당 월 수강료 - 일할 계산 금액
+                    const refundableAmount = currentMonth.fee - usedFee;
+
+                    // 현재 월의 환불액 계산 (환불 대상 금액에 법정 비율 적용)
+                    let currentMonthRefund = 0;
+                    let currentMonthDetail = '';
+                    let refundRate = 0;
+
+                    if (ratio < 1/3) {
+                        refundRate = 2/3;
+                        currentMonthRefund = Math.floor(refundableAmount * 2/3);
+                        currentMonthDetail = `${currentMonth.year}년 ${currentMonth.month}월: 1/3 미만 경과 (2/3 환불)`;
+                    } else if (ratio < 1/2) {
+                        refundRate = 1/2;
+                        currentMonthRefund = Math.floor(refundableAmount * 1/2);
+                        currentMonthDetail = `${currentMonth.year}년 ${currentMonth.month}월: 1/3~1/2 경과 (1/2 환불)`;
+                    } else {
+                        refundRate = 0;
+                        currentMonthRefund = 0;
+                        currentMonthDetail = `${currentMonth.year}년 ${currentMonth.month}월: 1/2 이상 경과 (환불 불가)`;
+                    }
+
+                    // 환불액이 음수가 되지 않도록 보정
+                    if (currentMonthRefund < 0) currentMonthRefund = 0;
+
+                    // 남은 월들의 전액 환불
+                    let remainingMonthsRefund = 0;
+                    for (let i = currentMonthIndex + 1; i < monthlyData.length; i++) {
+                        remainingMonthsRefund += monthlyData[i].fee;
+                    }
+
+                    refund = currentMonthRefund + remainingMonthsRefund;
+
+                    // 상세 내역
+                    let calculationDetail = '';
+                    if (refundRate > 0) {
+                        calculationDetail = `<br><br><strong>계산 과정:</strong><br>` +
+                                          `해당 월 수강료: ${formatNumber(currentMonth.fee)}원<br>` +
+                                          `일할 계산 (${formatNumber(dailyFee)}원/일 × ${currentMonth.completed}일): -${formatNumber(usedFee)}원<br>` +
+                                          `환불 대상 금액: ${formatNumber(refundableAmount)}원<br>` +
+                                          `법정 환불율(${refundRate === 2/3 ? '2/3' : '1/2'}): ${formatNumber(refundableAmount * refundRate)}원<br>` +
+                                          `= 해당 월 환불액: ${formatNumber(currentMonthRefund)}원`;
+                    } else {
+                        calculationDetail = `<br><br><strong>계산 과정:</strong><br>` +
+                                          `해당 월 수강료: ${formatNumber(currentMonth.fee)}원<br>` +
+                                          `총 교습의 1/2 이상 경과로 환불 불가`;
+                    }
+
+                    let monthBreakdown = '<br><br><strong>월별 상세:</strong><br>';
+                    monthlyData.forEach((month, idx) => {
+                        let status = '';
+                        let refundAmount = 0;
+
+                        if (idx < currentMonthIndex) {
+                            status = ' <span style="color: #999;">(완료)</span>';
+                            refundAmount = 0;
+                        } else if (idx === currentMonthIndex) {
+                            status = ' <span style="color: #f57f17; font-weight: 600;">(환불 대상)</span>';
+                            refundAmount = currentMonthRefund;
+                        } else {
+                            status = ' <span style="color: #2e7d32;">(전액 환불)</span>';
+                            refundAmount = month.fee;
+                        }
+
+                        monthBreakdown += `${month.year}년 ${month.month}월: ${formatNumber(month.fee)}원 ` +
+                                        `(${month.completed}/${month.days}일)${status} ` +
+                                        `→ 환불: ${formatNumber(refundAmount)}원<br>`;
+                    });
+
+                    detail = `<strong>${currentMonthDetail}</strong>` +
+                            calculationDetail +
+                            `<br><br>남은 월 환불액: ${formatNumber(remainingMonthsRefund)}원` +
+                            monthBreakdown;
+                }
+            }
+
+            refundAmount.textContent = formatNumber(refund) + '원';
+            refundDetail.innerHTML = detail;
+            result.classList.add('show');
+
+            // 결과로 스크롤
+            result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+    </script>
+</body>
+</html>
