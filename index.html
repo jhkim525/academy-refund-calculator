@@ -262,6 +262,22 @@
             </div>
 
             <div class="form-group">
+                <label>
+                    <input type="checkbox" id="hasDiscount">
+                    할인 적용
+                </label>
+                <div class="holiday-input" id="discountInput" style="display: none;">
+                    <label for="originalFee">정가 (원)</label>
+                    <input type="number" id="originalFee" min="0" step="1" placeholder="예: 1200000">
+                    <div class="help-text">할인 전 원래 가격을 입력하세요</div>
+                    
+                    <label for="discountDetails" style="margin-top: 10px;">할인 상세 내역</label>
+                    <input type="text" id="discountDetails" placeholder="예: 조기등록 할인 20%">
+                    <div class="help-text">할인 사유 및 내용을 입력하세요</div>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="courseStartDate">수강 시작일</label>
                 <input type="date" id="courseStartDate" required>
             </div>
@@ -342,6 +358,14 @@
         // 공휴일 체크박스 토글
         excludeHolidaysCheckbox.addEventListener('change', function() {
             holidayInput.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // 할인 체크박스 토글
+        const hasDiscountCheckbox = document.getElementById('hasDiscount');
+        const discountInput = document.getElementById('discountInput');
+
+        hasDiscountCheckbox.addEventListener('change', function() {
+            discountInput.style.display = this.checked ? 'block' : 'none';
         });
 
         // 2026년 한국 공휴일 (기본값)
@@ -428,17 +452,24 @@
             monthlyData = Array.from(monthsMap.values());
             const totalDays = monthlyData.reduce((sum, m) => sum + m.days, 0);
 
-            // 월별 수강료 계산 (1원 단위까지 정확하게)
-            let remainingFee = totalFee;
+            // 월별 수강료 계산 (할인 적용 시 정가 기준으로 계산)
+            const hasDiscount = document.getElementById('hasDiscount').checked;
+            const baseFee = hasDiscount && document.getElementById('originalFee').value ? 
+                            parseFloat(document.getElementById('originalFee').value) : totalFee;
+
+            let remainingFee = baseFee;
             monthlyData.forEach((m, idx) => {
                 if (idx === monthlyData.length - 1) {
                     m.fee = remainingFee;
                 } else {
-                    m.fee = Math.floor(totalFee * m.days / totalDays);
+                    m.fee = Math.floor(baseFee * m.days / totalDays);
                     remainingFee -= m.fee;
                 }
                 m.completed = 0; // 초기값
             });
+
+            // 할인율 저장 (나중에 사용)
+            monthlyData.discountRate = hasDiscount && baseFee > totalFee ? totalFee / baseFee : 1;
 
             // 월별 요약 표시
             displayMonthSummary();
@@ -506,8 +537,35 @@
 
             // 교습 시작 전 확인
             if (refundDate < startDate) {
-                refund = totalFee;
-                detail = '교습 시작 전이므로 전액 환불됩니다.';
+                let fullRefund = totalFee;
+                
+                // 할인 적용 시 정가 기준으로 계산
+                if (document.getElementById('hasDiscount').checked) {
+                    const originalFee = parseFloat(document.getElementById('originalFee').value);
+                    const discountDetails = document.getElementById('discountDetails').value;
+                    
+                    if (originalFee > 0 && originalFee > totalFee) {
+                        const discountRate = totalFee / originalFee;
+                        fullRefund = originalFee; // 정가 기준
+                        refund = totalFee; // 실제 납부액 전액
+                        
+                        detail = '교습 시작 전이므로 전액 환불됩니다.' +
+                                `<br><br><strong>할인 적용:</strong><br>` +
+                                `할인 내역: ${discountDetails || '정보 없음'}<br>` +
+                                `정가: ${formatNumber(originalFee)}원<br>` +
+                                `납부액(할인가): ${formatNumber(totalFee)}원<br>` +
+                                `할인율: ${((1 - discountRate) * 100).toFixed(1)}%<br>` +
+                                `<br>정가 기준 환불액: ${formatNumber(fullRefund)}원<br>` +
+                                `할인율 적용: × ${(discountRate * 100).toFixed(2)}%<br>` +
+                                `<strong>최종 환불액: ${formatNumber(refund)}원</strong>`;
+                    } else {
+                        refund = totalFee;
+                        detail = '교습 시작 전이므로 전액 환불됩니다.';
+                    }
+                } else {
+                    refund = totalFee;
+                    detail = '교습 시작 전이므로 전액 환불됩니다.';
+                }
             } else {
                 // 현재 환불 대상 월 찾기
                 let currentMonthIndex = -1;
@@ -561,7 +619,36 @@
                         remainingMonthsRefund += monthlyData[i].fee;
                     }
 
-                    refund = currentMonthRefund + remainingMonthsRefund;
+                    // 정가 기준 환불액 계산 완료
+                    const fullPriceRefund = currentMonthRefund + remainingMonthsRefund;
+
+                    // 할인 적용 계산
+                    let discountInfo = '';
+                    let finalRefund = fullPriceRefund;
+
+                    if (document.getElementById('hasDiscount').checked) {
+                        const originalFee = parseFloat(document.getElementById('originalFee').value);
+                        const discountDetails = document.getElementById('discountDetails').value;
+                        
+                        if (originalFee > 0 && originalFee > totalFee) {
+                            // 할인율 계산
+                            const discountRate = totalFee / originalFee;
+                            
+                            // 최종 환불액 = 정가 기준 환불액 × 할인율
+                            finalRefund = Math.floor(fullPriceRefund * discountRate);
+                            
+                            discountInfo = `<br><br><strong>할인 적용:</strong><br>` +
+                                        `할인 내역: ${discountDetails || '정보 없음'}<br>` +
+                                        `정가: ${formatNumber(originalFee)}원<br>` +
+                                        `납부액(할인가): ${formatNumber(totalFee)}원<br>` +
+                                        `할인율: ${((1 - discountRate) * 100).toFixed(1)}%<br>` +
+                                        `<br>정가 기준 환불액: ${formatNumber(fullPriceRefund)}원<br>` +
+                                        `할인율 적용: × ${(discountRate * 100).toFixed(2)}%<br>` +
+                                        `<strong>최종 환불액: ${formatNumber(finalRefund)}원</strong>`;
+                        }
+                    }
+
+                    refund = finalRefund;
 
                     // 상세 내역
                     let calculationDetail = '';
@@ -578,11 +665,11 @@
                                           `총 교습의 1/2 이상 경과로 환불 불가`;
                     }
 
-                    let monthBreakdown = '<br><br><strong>월별 상세:</strong><br>';
+                    let monthBreakdown = '<br><br><strong>월별 상세 (정가 기준):</strong><br>';
                     monthlyData.forEach((month, idx) => {
                         let status = '';
                         let refundAmount = 0;
-
+                        
                         if (idx < currentMonthIndex) {
                             status = ' <span style="color: #999;">(완료)</span>';
                             refundAmount = 0;
@@ -593,15 +680,25 @@
                             status = ' <span style="color: #2e7d32;">(전액 환불)</span>';
                             refundAmount = month.fee;
                         }
-
+                        
                         monthBreakdown += `${month.year}년 ${month.month}월: ${formatNumber(month.fee)}원 ` +
                                         `(${month.completed}/${month.days}일)${status} ` +
                                         `→ 환불: ${formatNumber(refundAmount)}원<br>`;
                     });
 
+                    // 할인 적용 시 실제 환불액 추가 표시
+                    if (document.getElementById('hasDiscount').checked) {
+                        const originalFee = parseFloat(document.getElementById('originalFee').value);
+                        if (originalFee > 0 && originalFee > totalFee) {
+                            const discountRate = totalFee / originalFee;
+                            monthBreakdown += `<br><em style="color: #666;">※ 위 금액은 정가 기준이며, 실제 환불 시 할인율(${(discountRate * 100).toFixed(2)}%) 적용</em>`;
+                        }
+                    } 
+
                     detail = `<strong>${currentMonthDetail}</strong>` +
                             calculationDetail +
                             `<br><br>남은 월 환불액: ${formatNumber(remainingMonthsRefund)}원` +
+                            discountInfo +  
                             monthBreakdown;
                 }
             }
