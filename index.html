@@ -268,11 +268,11 @@
                 </label>
                 <div class="holiday-input" id="excludedPeriodInput" style="display: none;">
                     <label for="excludeStartDate">수업 제외 시작일</label>
-                    <input type="date" id="excludeStartDate">
+                    <input type="text" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" id="excludeStartDate">
                     <div class="help-text">제외 기간의 첫 날</div>
                     
                     <label for="excludeEndDate" style="margin-top: 10px;">수업 제외 종료일</label>
-                    <input type="date" id="excludeEndDate">
+                    <input type="text" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" id="excludeEndDate">
                     <div class="help-text">제외 기간의 마지막 날 (입력하지 않으면 수강 종료일까지 제외)</div>
                     
                     <label for="excludeReason" style="margin-top: 10px;">제외 사유</label>
@@ -283,12 +283,12 @@
 
             <div class="form-group">
                 <label for="courseStartDate">수강 시작일</label>
-                <input type="date" id="courseStartDate" required>
+                <input type="text" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" id="courseStartDate" required>
             </div>
 
             <div class="form-group">
                 <label for="courseEndDate">수강 종료일</label>
-                <input type="date" id="courseEndDate" required>
+                <input type="text" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" id="courseEndDate" required>
             </div>
 
             <div class="form-group">
@@ -322,7 +322,7 @@
 
             <div class="form-group" id="refundDateGroup" style="display: none;">
                 <label for="refundDate">환불 고지일 (수강 포기일)</label>
-                <input type="date" id="refundDate" required>
+                <input type="text" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" id="refundDate" required>
             </div>
 
             <button type="submit" id="submitBtn" style="display: none;">환불액 계산하기</button>
@@ -346,6 +346,49 @@
     </div>
 
     <script>
+        // 날짜 자동 포맷팅 기능
+        function formatDateInput(input) {
+            input.addEventListener('input', function(e) {
+                let value = this.value.replace(/[^0-9]/g, ''); // 숫자만 남김
+                let formatted = '';
+                
+                if (value.length > 0) {
+                    formatted = value.substring(0, 4); // YYYY
+                }
+                if (value.length >= 5) {
+                    formatted += '-' + value.substring(4, 6); // MM
+                }
+                if (value.length >= 7) {
+                    formatted += '-' + value.substring(6, 8); // DD
+                }
+                
+                this.value = formatted;
+            });
+            
+            // 백스페이스 처리
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace') {
+                    const cursorPosition = this.selectionStart;
+                    const value = this.value;
+                    
+                    // 하이픈 위치에서 백스페이스 누르면 하이픈 건너뛰기
+                    if (cursorPosition > 0 && value[cursorPosition - 1] === '-') {
+                        this.value = value.substring(0, cursorPosition - 1) + value.substring(cursorPosition);
+                        this.selectionStart = this.selectionEnd = cursorPosition - 1;
+                        e.preventDefault();
+                    }
+                }
+            });
+        }
+        
+        // 모든 날짜 입력 필드에 적용
+        const dateInputIds = ['excludeStartDate', 'excludeEndDate', 'courseStartDate', 'courseEndDate', 'refundDate'];
+        dateInputIds.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                formatDateInput(input);
+            }
+        });
         const form = document.getElementById('refundForm');
         const result = document.getElementById('result');
         const refundAmount = document.getElementById('refundAmount');
