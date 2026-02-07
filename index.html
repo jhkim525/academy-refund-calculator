@@ -278,6 +278,26 @@
             </div>
 
             <div class="form-group">
+                <label>
+                    <input type="checkbox" id="hasExcludedPeriod">
+                    수업 제외(차감) 기간 설정
+                </label>
+                <div class="holiday-input" id="excludedPeriodInput" style="display: none;">
+                    <label for="excludeStartDate">수업 제외 시작일</label>
+                    <input type="date" id="excludeStartDate">
+                    <div class="help-text">제외 기간의 첫 날</div>
+                    
+                    <label for="excludeEndDate" style="margin-top: 10px;">수업 제외 종료일</label>
+                    <input type="date" id="excludeEndDate">
+                    <div class="help-text">제외 기간의 마지막 날 (입력하지 않으면 수강 종료일까지 제외)</div>
+                    
+                    <label for="excludeReason" style="margin-top: 10px;">제외 사유</label>
+                    <input type="text" id="excludeReason" placeholder="예: 학교 개학">
+                    <div class="help-text">제외 사유를 입력하세요</div>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="courseStartDate">수강 시작일</label>
                 <input type="date" id="courseStartDate" required>
             </div>
@@ -368,6 +388,14 @@
             discountInput.style.display = this.checked ? 'block' : 'none';
         });
 
+        // 제외 기간 체크박스 토글
+        const hasExcludedPeriodCheckbox = document.getElementById('hasExcludedPeriod');
+        const excludedPeriodInput = document.getElementById('excludedPeriodInput');
+
+        hasExcludedPeriodCheckbox.addEventListener('change', function() {
+            excludedPeriodInput.style.display = this.checked ? 'block' : 'none';
+        });
+
         // 2026년 한국 공휴일 (기본값)
         const defaultHolidays = [
             '2026-01-01', // 신정
@@ -423,6 +451,22 @@
             const monthsMap = new Map();
             let currentDate = new Date(startDate);
 
+            // 제외 기간 설정 확인
+            const hasExcludedPeriod = document.getElementById('hasExcludedPeriod').checked;
+            let excludeStartDate = null;
+            let excludeEndDate = null;
+
+            if (hasExcludedPeriod) {
+                const startInput = document.getElementById('excludeStartDate').value;
+                const endInput = document.getElementById('excludeEndDate').value;
+                
+                if (startInput) {
+                    excludeStartDate = new Date(startInput);
+                    // 종료일이 없으면 수강 종료일까지 제외
+                    excludeEndDate = endInput ? new Date(endInput) : endDate;
+                }
+            }
+
             while (currentDate <= endDate) {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth() + 1;
@@ -437,6 +481,11 @@
                 if (excludeSaturday && dayOfWeek === 6) shouldCount = false;
                 if (excludeSunday && dayOfWeek === 0) shouldCount = false;
                 if (excludeHolidays && holidays.includes(dateStr)) shouldCount = false;
+                
+                // 제외 기간 범위 확인 (시작일 <= 현재날짜 <= 종료일)
+                if (excludeStartDate && currentDate >= excludeStartDate && currentDate <= excludeEndDate) {
+                    shouldCount = false;
+                }
 
                 if (shouldCount) {
                     if (!monthsMap.has(key)) {
@@ -484,6 +533,21 @@
             if (monthlyData.length === 0) return;
 
             let html = '<div class="month-summary-title">📊 월별 수업일수 및 수강료</div>';
+            
+            // 제외 기간 정보 표시
+            if (document.getElementById('hasExcludedPeriod').checked) {
+                const excludeStartDate = document.getElementById('excludeStartDate').value;
+                const excludeEndDate = document.getElementById('excludeEndDate').value;
+                const excludeReason = document.getElementById('excludeReason').value;
+                if (excludeStartDate) {
+                    const periodText = excludeEndDate ? 
+                        `${excludeStartDate} ~ ${excludeEndDate}` : 
+                        `${excludeStartDate} 이후 (수강 종료일까지)`;
+                    html += `<div style="background: #fff3e0; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 13px;">
+                                ⚠️ <strong>제외 기간:</strong> ${periodText} (${excludeReason || '사유 미입력'})
+                            </div>`;
+                }
+            }
 
             monthlyData.forEach((m, idx) => {
                 html += `
@@ -650,6 +714,23 @@
 
                     refund = finalRefund;
 
+                    // 제외 기간 정보
+                    let excludedPeriodInfo = '';
+                    if (document.getElementById('hasExcludedPeriod').checked) {
+                        const excludeStartDate = document.getElementById('excludeStartDate').value;
+                        const excludeEndDate = document.getElementById('excludeEndDate').value;
+                        const excludeReason = document.getElementById('excludeReason').value;
+                        if (excludeStartDate) {
+                            const periodText = excludeEndDate ? 
+                                `${excludeStartDate} ~ ${excludeEndDate}` : 
+                                `${excludeStartDate} 이후 (수강 종료일까지)`;
+                            excludedPeriodInfo = `<br><br><strong>수업 제외 기간:</strong><br>` +
+                                                `제외 기간: ${periodText}<br>` +
+                                                `제외 사유: ${excludeReason || '정보 없음'}<br>` +
+                                                `(해당 기간은 수업일수 및 수강료 계산에서 제외됨)`;
+                        }
+                    }
+
                     // 상세 내역
                     let calculationDetail = '';
                     if (refundRate > 0) {
@@ -698,7 +779,8 @@
                     detail = `<strong>${currentMonthDetail}</strong>` +
                             calculationDetail +
                             `<br><br>남은 월 환불액: ${formatNumber(remainingMonthsRefund)}원` +
-                            discountInfo +  
+                            discountInfo + 
+                            excludedPeriodInfo +  
                             monthBreakdown;
                 }
             }
